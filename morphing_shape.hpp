@@ -9,13 +9,14 @@
 #include <SFML/System.hpp>
 
 #include "config.hpp"
+#include "helper.hpp"
 
 class MorphingShape {
 private:
     sf::ConvexShape shape;
     sf::ConvexShape targetShape;
     float newShapeTimer {0.f};
-    float newShapeTimerMax {1.f};
+    float newShapeTimerMax {2.f};
 
     void initShapes() {
         shape = generateRandomConvexShape();
@@ -24,7 +25,8 @@ private:
 
     sf::ConvexShape generateRandomConvexShape() {
         // following https://cglab.ca/~sander/misc/ConvexGeneration/convex.html to create random convex shapes
-        const unsigned pointCount {static_cast<unsigned>(rand() % 8 + 8)};
+        // const unsigned pointCount {static_cast<unsigned>(rand() % 8 + 8)}; will make random later
+        const unsigned pointCount {8};
         std::vector<float> randXVec;
         std::vector<float> randYVec;
 
@@ -142,10 +144,20 @@ private:
 
 public:
     MorphingShape() {
+        srand(time(NULL));
         initShapes();
     }
 
     virtual ~MorphingShape() = default;
+
+    void updateShapePoints() {
+        sf::Vector2f point {};
+        for (size_t i {0}; i < 8; i++) {
+            float t = newShapeTimer/newShapeTimerMax;
+            point = lerp(shape.getPoint(i), targetShape.getPoint(i), t);
+            shape.setPoint(i, point);
+        }
+    }
 
     void update(float deltaTime) {
         newShapeTimer += deltaTime;
@@ -155,6 +167,7 @@ public:
             targetShape = generateRandomConvexShape();
         }
 
+        updateShapePoints();
     }
 
     void render(sf::RenderTarget& target) {
