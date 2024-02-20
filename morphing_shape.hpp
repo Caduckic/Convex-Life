@@ -14,12 +14,14 @@
 class MorphingShape {
 private:
     sf::ConvexShape shape;
+    sf::ConvexShape lastShape;
     sf::ConvexShape targetShape;
     float newShapeTimer {0.f};
-    float newShapeTimerMax {2.f};
+    float newShapeTimerMax {1.f};
 
     void initShapes() {
-        shape = generateRandomConvexShape();
+        lastShape = generateRandomConvexShape();
+        shape = lastShape;
         targetShape = generateRandomConvexShape();
     }
 
@@ -117,7 +119,6 @@ private:
 
         // We end up with a shape that starts at 0,0 and goes up,
         // we need to find the width center point to set the shapes origin. Height is easy as it will just be the height/2
-        float xStart = 0.f;
         float xLowest {INFINITY};
         float xHighest {-INFINITY};
 
@@ -154,20 +155,36 @@ public:
         sf::Vector2f point {};
         for (size_t i {0}; i < 8; i++) {
             float t = newShapeTimer/newShapeTimerMax;
-            point = lerp(shape.getPoint(i), targetShape.getPoint(i), t);
+            point = lerp(lastShape.getPoint(i), targetShape.getPoint(i), t);
             shape.setPoint(i, point);
         }
+    }
+
+    void centerShape() {
+        float xLowest {INFINITY};
+        float xHighest {-INFINITY};
+
+        for (size_t i {0}; i < 8; i++) {
+            float x = shape.getPoint(i).x;
+            if (x < xLowest) xLowest = x;
+            if (x > xHighest) xHighest = x;
+        }
+        float boundsCenterX = (abs(xLowest) + abs(xHighest))/2.f;
+        float centerX = boundsCenterX + xLowest;
+
+        shape.setOrigin({centerX, -shape.getGlobalBounds().height/2.f});
     }
 
     void update(float deltaTime) {
         newShapeTimer += deltaTime;
         if (newShapeTimer >= newShapeTimerMax) {
             newShapeTimer = fmod(newShapeTimer, newShapeTimerMax);
-            shape = targetShape;
+            lastShape = targetShape;
             targetShape = generateRandomConvexShape();
         }
 
         updateShapePoints();
+        centerShape();
     }
 
     void render(sf::RenderTarget& target) {
